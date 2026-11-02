@@ -9,3 +9,4 @@ export const LessonSchema = z.object({
 
 // 型（スキーマから自動で作る）
 export type Lesson = z.infer<typeof LessonSchema>;
+const n: number = "x";
