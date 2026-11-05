@@ -148,3 +148,7 @@ vite.config.ts.timestamp-*
 # Turbo Repo
 .turbo
 apps/api/generated
+
+# Prisma CLI が作る他社製の説明ファイル(.claude は .agents へのリンク)
+apps/api/.agents/
+apps/api/.claude/
