@@ -52,3 +52,12 @@
 - 検算を保証としない理由と、許容誤差の決め方(7-2)
 - AI連携の実測コスト(5-9)
 - デプロイ先の比較(9-3)
+
+## 2-2 スキーマの判断
+
+- enum にした理由: schoolLevel・method・priority などは取りうる値が決まっている。DB が不正な値を拒否し、TypeScript の型としても使えるため。値は英語名にし、画面の日本語は packages/shared で対応づける。
+- Json にした列: practiceSettings、features、payload。項目が増減しやすく、DB 側で検索しないため。中身は zod で検証する。
+- インデックス: userId、lessonId、expiresAt に付けた。一覧表示と期限切れ削除で絞り込む列だから。
+- Session.id だけ cuid ではなく、トークンのハッシュを入れる。
+- Suggestion.where は Prisma の where と紛らわしいので place にした。
+- UsageLog は (userId, date) を一意にし、1日1行に加算する。

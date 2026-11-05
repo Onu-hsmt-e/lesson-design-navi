@@ -11,3 +11,224 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum LessonStyle {
+  HANDOUT
+  BOARD_NOTE
+}
+
+enum PaperSize {
+  A4
+  B4
+  A3
+}
+
+enum Orientation {
+  LANDSCAPE
+  PORTRAIT
+}
+
+enum SchoolLevel {
+  TOP
+  MID
+  FOUNDATION
+}
+
+enum LessonStatus {
+  DRAFT
+  CONFIRMED
+}
+
+enum Method {
+  NERIAGE
+  PAIR
+  GROUP
+  INDIVIDUAL_LECTURE
+}
+
+enum AnswerSize {
+  SMALL
+  MEDIUM
+  LARGE
+  NONE
+}
+
+enum Priority {
+  REQUIRED
+  SKIPPABLE
+  EXTENSION
+}
+
+enum Perspective {
+  SUBJECTIVE
+  DIALOGIC
+  DEEP
+}
+
+enum IssueKind {
+  SOURCE_ERROR_SUSPECTED
+  UNREADABLE
+  CHECK_MISMATCH
+  RULE_VIOLATION
+}
+
+enum CheckResult {
+  MATCH
+  MISMATCH
+  NEEDS_REVIEW
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  sessions  Session[]
+  profile   ClassroomProfile?
+  lessons   Lesson[]
+  usageLogs UsageLog[]
+}
+
+model Session {
+  id        String   @id // ランダム文字列のハッシュ(アプリ側で渡す)
+  userId    String
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model ClassroomProfile {
+  id                 String      @id @default(cuid())
+  userId             String      @unique
+  lessonStyle        LessonStyle @default(HANDOUT)
+  paperSize          PaperSize   @default(A4)
+  orientation        Orientation @default(LANDSCAPE)
+  nameField          Boolean     @default(true)
+  answerHeightSmall  Int         @default(25)
+  answerHeightMedium Int         @default(45)
+  answerHeightLarge  Int         @default(80)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Lesson {
+  id                String        @id @default(cuid())
+  userId            String
+  sourceText        String
+  unitName          String?
+  inferredUnit      String?
+  inferredAim       String?
+  schoolLevel       SchoolLevel
+  adjustSubjective  Int           @default(0)
+  adjustDialogic    Int           @default(0)
+  adjustDeep        Int           @default(0)
+  focusPerspectives Perspective[]
+  durationMin       Int           @default(50)
+  practiceSettings  Json          @default("{}")
+  status            LessonStatus  @default(DRAFT)
+  expiresAt         DateTime
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activities  Activity[]
+  issues      Issue[]
+  suggestions Suggestion[]
+  snapshots   Snapshot[]
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Activity {
+  id              String     @id @default(cuid())
+  lessonId        String
+  position        Int
+  content         String
+  plannedMin      Int
+  features        Json       @default("{}")
+  method          Method?
+  ruleId          String?
+  reason          String?
+  answerSize      AnswerSize @default(NONE)
+  priority        Priority   @default(REQUIRED)
+  hasPresentation Boolean    @default(false)
+  editedByTeacher Boolean    @default(false)
+
+  lesson Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  issues Issue[]
+  checks Check[]
+
+  @@index([lessonId])
+}
+
+model Issue {
+  id         String    @id @default(cuid())
+  lessonId   String
+  activityId String?
+  kind       IssueKind
+  message    String
+
+  lesson   Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  activity Activity? @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([activityId])
+}
+
+model Suggestion {
+  id          String      @id @default(cuid())
+  lessonId    String
+  perspective Perspective
+  place       String
+  change      String
+  why         String
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+model Check {
+  id         String      @id @default(cuid())
+  activityId String
+  exprA      String
+  exprB      String
+  result     CheckResult
+  reason     String?
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+}
+
+model Snapshot {
+  id        String   @id @default(cuid())
+  lessonId  String
+  payload   Json
+  createdAt DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+model UsageLog {
+  id               String   @id @default(cuid())
+  userId           String
+  date             DateTime @db.Date
+  calls            Int      @default(0)
+  inputTokens      Int      @default(0)
+  outputTokens     Int      @default(0)
+  cacheReadTokens  Int      @default(0)
+  cacheWriteTokens Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
