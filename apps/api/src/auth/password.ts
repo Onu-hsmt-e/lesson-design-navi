@@ -1,4 +1,4 @@
-import { argon2id, hash, verify } from 'argon2';
+import { argon2id, hash, verify } from "argon2";
 
 const options = {
   type: argon2id,
@@ -9,7 +9,7 @@ const options = {
 
 // 端末や入力方法が違っても同じ結果になるよう、NFKC に正規化してから扱う
 function normalize(password: string): string {
-  return password.normalize('NFKC');
+  return password.normalize("NFKC");
 }
 
 export function hashPassword(password: string): Promise<string> {
